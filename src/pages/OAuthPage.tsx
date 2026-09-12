@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
+import { MantleWizard } from '@/features/bedrockMantle/MantleWizard';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -246,6 +247,7 @@ export function OAuthPage() {
   const { showNotification } = useNotificationStore();
   const resolvedTheme = useThemeStore((state) => state.resolvedTheme);
   const [states, setStates] = useState<Record<string, ProviderState>>({});
+  const [mantleOpen, setMantleOpen] = useState(false);
   const [pluginProviders, setPluginProviders] = useState<PluginOAuthProviderCard[]>([]);
   const [vertexState, setVertexState] = useState<VertexImportState>({
     fileName: '',
@@ -733,6 +735,16 @@ export function OAuthPage() {
             {otherOAuthProviders.map((provider) => renderOAuthProviderCard(provider))}
           </div>
         </section>
+
+        <section className={styles.providerSection}>
+          <Card
+            title={t('mantle.title')}
+            extra={<Button onClick={() => setMantleOpen(true)}>{t('mantle.add')}</Button>}
+          >
+            <p className={styles.cardHint}>{t('mantle.description')}</p>
+          </Card>
+        </section>
+        {mantleOpen && <MantleWizard onClose={() => setMantleOpen(false)} />}
 
         {/* Vertex JSON 登录 */}
         <section className={styles.providerSection}>

@@ -4,6 +4,7 @@
  */
 
 import type { RecentRequestBucket } from '@/utils/recentRequests';
+import type { MantleCredential } from '@/services/api/bedrockMantle';
 
 export type AuthFileType =
   | 'qwen'
@@ -32,6 +33,7 @@ export interface AuthFileItem {
   email?: string;
   /** GCP / Vertex 项目 ID，账号邮箱缺失时作为身份回落。 */
   projectId?: string;
+  bedrockMantle?: MantleCredential;
   size?: number;
   authIndex?: string | number | null;
   runtimeOnly?: boolean | string;

@@ -35,6 +35,7 @@ import {
 } from '@/features/authFiles/constants';
 import { deriveAuthFileIdentity } from '@/features/authFiles/identity';
 import type { AuthFileStatusBarData } from '@/features/authFiles/hooks/useAuthFilesStatusBarCache';
+import { MantleCredentialDetails } from '@/features/bedrockMantle/MantleCredentialDetails';
 import { AuthFileQuotaSection } from '@/features/authFiles/components/AuthFileQuotaSection';
 import styles from './AuthFileCard.module.scss';
 
@@ -219,6 +220,14 @@ export function AuthFileCard(props: AuthFileCardProps) {
         <p className={styles.fileName} title={identity.fullName}>
           {identity.secondary}
         </p>
+      )}
+
+      {providerKey === 'bedrock-mantle' && file.bedrockMantle && (
+        <MantleCredentialDetails
+          credential={file.bedrockMantle}
+          fileName={file.name}
+          disabled={disableControls || isManualRefreshing}
+        />
       )}
 
       {!compact && noteValue && (

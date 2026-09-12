@@ -3,6 +3,7 @@
  */
 
 import { apiClient } from './client';
+import { normalizeMantleCredential } from './bedrockMantle';
 import type { AuthFilesResponse } from '@/types/authFile';
 import type { OAuthModelAliasEntry } from '@/types';
 import { normalizeOAuthProviderKey } from '@/utils/providerKeys';
@@ -17,6 +18,8 @@ type StatusError = { status?: number };
 type AuthFileStatusResponse = { status: string; disabled: boolean };
 type AuthFileEntry = AuthFilesResponse['files'][number];
 export type AuthFileFieldsPatch = {
+  default_region?: string;
+  model_regions?: Record<string, string>;
   prefix?: string;
   proxy_url?: string;
   headers?: Record<string, string>;
@@ -267,6 +270,7 @@ const normalizeAuthFileEntry = (entry: AuthFileEntry): AuthFileEntry => {
     ...(note ? { note } : {}),
     ...(email ? { email } : {}),
     ...(projectId ? { projectId } : {}),
+    bedrockMantle: normalizeMantleCredential(entry.bedrock_mantle),
   };
 };
 

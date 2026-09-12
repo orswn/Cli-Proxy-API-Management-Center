@@ -1,5 +1,12 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import {
+  buildMantleRegionPatch,
+  readMantleRegions,
+  validateMantleRegions,
+  type MantleRegionSettings,
+  type MantleRegionError,
+} from '@/features/bedrockMantle/regions';
 import { authFilesApi, type AuthFileFieldsPatch } from '@/services/api';
 import type { AuthFileItem } from '@/types';
 import { useNotificationStore } from '@/stores';
@@ -29,9 +36,10 @@ type AuthFileHeadersErrorKey =
 type AuthFileContentErrorKey =
   'auth_files.prefix_proxy_invalid_json' | 'auth_files.prefix_proxy_html_challenge';
 type AuthFileWeightErrorKey = 'auth_files.weight_invalid_integer' | 'auth_files.weight_invalid_max';
-type AuthFileEditorErrorKey = AuthFileHeadersErrorKey | AuthFileWeightErrorKey;
+type AuthFileEditorErrorKey = AuthFileHeadersErrorKey | AuthFileWeightErrorKey | MantleRegionError;
 
 export type PrefixProxyEditorField =
+  | 'mantleRegions'
   | 'prefix'
   | 'proxyUrl'
   | 'priority'
@@ -43,9 +51,10 @@ export type PrefixProxyEditorField =
   | 'excludedModelsText'
   | 'headersText';
 
-export type PrefixProxyEditorFieldValue = string | boolean;
+export type PrefixProxyEditorFieldValue = string | boolean | MantleRegionSettings;
 
 export type PrefixProxyEditorState = {
+  mantleRegions?: MantleRegionSettings;
   fileName: string;
   fileInfoText: string;
   loading: boolean;
@@ -275,6 +284,11 @@ export const buildAuthFileFieldsPatch = (
 ): AuthFileFieldsPatch => {
   const original = editor.json ?? {};
   const patch: AuthFileFieldsPatch = {};
+  if (editor.providerKey === 'bedrock-mantle' && editor.mantleRegions) {
+    const error = validateMantleRegions(editor.mantleRegions);
+    if (error) throw new Error(resolveError(error));
+    Object.assign(patch, buildMantleRegionPatch(original, editor.mantleRegions));
+  }
 
   const originalPrefix = normalizeTextField(original.prefix);
   const nextPrefix = editor.prefix.trim();
@@ -385,6 +399,8 @@ const buildPrefixProxyUpdatedText = (
   if (!editor?.json) return editor?.rawText ?? '';
   const patch = buildAuthFileFieldsPatch(editor, resolveError);
   let next: Record<string, unknown> = { ...editor.json };
+  if (patch.default_region !== undefined) next.default_region = patch.default_region;
+  if (patch.model_regions !== undefined) next.model_regions = patch.model_regions;
   if (patch.prefix !== undefined) {
     if (patch.prefix) {
       next.prefix = patch.prefix;
@@ -462,7 +478,8 @@ export function useAuthFilesPrefixProxyEditor(
 
   const hasBlockingValidationError = Boolean(
     (prefixProxyEditor?.headersTouched && prefixProxyEditor.headersError) ||
-    prefixProxyEditor?.weightError
+    prefixProxyEditor?.weightError ||
+    (prefixProxyEditor?.mantleRegions && validateMantleRegions(prefixProxyEditor.mantleRegions))
   );
   const prefixProxyUpdatedText =
     prefixProxyEditor && !hasBlockingValidationError
@@ -474,7 +491,12 @@ export function useAuthFilesPrefixProxyEditor(
       ? buildAuthFileFieldsPatch(prefixProxyEditor, (key) => t(key))
       : null;
 
-  const prefixProxyDirty = hasKeys(prefixProxyPatch);
+  const invalidMantleChanges = Boolean(
+    prefixProxyEditor?.mantleRegions &&
+    validateMantleRegions(prefixProxyEditor.mantleRegions) &&
+    hasKeys(buildMantleRegionPatch(prefixProxyEditor.json ?? {}, prefixProxyEditor.mantleRegions))
+  );
+  const prefixProxyDirty = hasKeys(prefixProxyPatch) || invalidMantleChanges;
 
   const closePrefixProxyEditor = () => {
     setPrefixProxyEditor(null);
@@ -585,6 +607,7 @@ export function useAuthFilesPrefixProxyEditor(
           invalidContentPreview: '',
           json,
           providerKey,
+          mantleRegions: providerKey === 'bedrock-mantle' ? readMantleRegions(json) : undefined,
           prefix,
           proxyUrl,
           priority: priority !== undefined ? String(priority) : '',
@@ -622,6 +645,8 @@ export function useAuthFilesPrefixProxyEditor(
   ) => {
     setPrefixProxyEditor((prev) => {
       if (!prev) return prev;
+      if (field === 'mantleRegions' && typeof value === 'object')
+        return { ...prev, mantleRegions: value };
       if (field === 'prefix') return { ...prev, prefix: String(value) };
       if (field === 'proxyUrl') return { ...prev, proxyUrl: String(value) };
       if (field === 'priority') return { ...prev, priority: String(value) };

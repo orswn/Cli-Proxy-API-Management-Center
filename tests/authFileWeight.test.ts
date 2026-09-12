@@ -38,6 +38,39 @@ const makeEditor = (json: Record<string, unknown>, weight: string): PrefixProxyE
 
 const resolveError = (key: string) => key;
 
+describe('Mantle region settings patch', () => {
+  test('replaces and clears the map without copying secrets', () => {
+    const json = {
+      default_region: 'us-east-1',
+      model_regions: { 'openai.gpt-5.4': 'us-west-2' },
+      access_token: 'SECRET',
+    };
+    const editor = {
+      ...makeEditor(json, ''),
+      providerKey: 'bedrock-mantle',
+      mantleRegions: {
+        defaultRegion: 'us-east-1',
+        overrides: [{ model: 'openai.gpt-5.6-luna', region: 'eu-west-1' }],
+      },
+    };
+    expect(buildAuthFileFieldsPatch(editor, resolveError)).toEqual({
+      model_regions: { 'openai.gpt-5.6-luna': 'eu-west-1' },
+    });
+    expect(
+      buildAuthFileFieldsPatch(
+        { ...editor, mantleRegions: { ...editor.mantleRegions, overrides: [] } },
+        resolveError
+      )
+    ).toEqual({ model_regions: {} });
+    expect(() =>
+      buildAuthFileFieldsPatch(
+        { ...editor, mantleRegions: { ...editor.mantleRegions, defaultRegion: '' } },
+        resolveError
+      )
+    ).toThrow('mantle.invalid_region');
+  });
+});
+
 describe('auth-file credential weight patch', () => {
   test('writes numeric weight and uses null to restore the default', () => {
     expect(buildAuthFileFieldsPatch(makeEditor({}, '0'), resolveError)).toEqual({ weight: 0 });
@@ -96,9 +129,9 @@ describe('auth-file disable cooling patch', () => {
   });
 
   test('does not patch an untouched or unchanged override', () => {
-    expect(buildAuthFileFieldsPatch(makeEditor({ disable_cooling: true }, ''), resolveError)).toEqual(
-      {}
-    );
+    expect(
+      buildAuthFileFieldsPatch(makeEditor({ disable_cooling: true }, ''), resolveError)
+    ).toEqual({});
     expect(
       buildAuthFileFieldsPatch(
         {

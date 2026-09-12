@@ -4,6 +4,8 @@ import { Sheet } from '@/components/ui/Sheet';
 import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Input } from '@/components/ui/Input';
+import { MantleRegionEditor } from '@/features/bedrockMantle/MantleRegionEditor';
+import { validateMantleRegions } from '@/features/bedrockMantle/regions';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import { useNotificationStore } from '@/stores';
 import type {
@@ -139,7 +141,8 @@ export function AuthFileDetailsSheet(props: AuthFileDetailsSheetProps) {
               !dirty ||
               !editor?.json ||
               Boolean(editor?.headersTouched && editor.headersError) ||
-              Boolean(editor?.weightError)
+              Boolean(editor?.weightError) ||
+              Boolean(editor?.mantleRegions && validateMantleRegions(editor.mantleRegions))
             }
           >
             {t('common.save')}
@@ -175,6 +178,13 @@ export function AuthFileDetailsSheet(props: AuthFileDetailsSheetProps) {
               </div>
               {editor.json && (
                 <div className={styles.fields}>
+                  {editor.providerKey === 'bedrock-mantle' && editor.mantleRegions && (
+                    <MantleRegionEditor
+                      value={editor.mantleRegions}
+                      onChange={(value) => onChange('mantleRegions', value)}
+                      disabled={disableControls || editor.saving}
+                    />
+                  )}
                   <Input
                     label={t('auth_files.prefix_label')}
                     value={editor.prefix}

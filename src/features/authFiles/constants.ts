@@ -56,6 +56,7 @@ export const FALSY_TEXT_VALUES = new Set(['false', '0', 'no', 'n', 'off']);
 export const AUTH_FILE_WEBSOCKET_PROVIDERS = new Set(['codex', 'xai']);
 export const AUTH_FILE_USING_API_PROVIDERS = new Set(['xai']);
 export const AUTH_FILE_MANUAL_REFRESH_PROVIDERS = new Set([
+  'bedrock-mantle',
   'antigravity',
   'claude',
   'codex',
@@ -142,6 +143,7 @@ export const getTypeLabel = (t: TFunction, type: string): string => {
   const translated = t(key);
   if (translated !== key) return translated;
   if (providerKey === 'iflow') return 'iFlow';
+  if (providerKey === 'bedrock-mantle') return 'Bedrock Mantle';
   return type.charAt(0).toUpperCase() + type.slice(1);
 };
 

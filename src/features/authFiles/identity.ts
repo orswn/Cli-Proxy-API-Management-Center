@@ -17,7 +17,7 @@
 
 import type { AuthFileItem } from '@/types';
 
-export type AuthFileIdentityKind = 'email' | 'projectId' | 'fileName';
+export type AuthFileIdentityKind = 'email' | 'projectId' | 'accountName' | 'fileName';
 
 export type AuthFileIdentity = {
   /** 卡片主行。无任何身份线索时为空串——不伪造占位符。 */
@@ -52,8 +52,15 @@ export const deriveAuthFileIdentity = (file: AuthFileItem): AuthFileIdentity => 
   const email = readIdentityText(file.email);
   const projectId = readIdentityText(file.projectId);
 
-  const kind: AuthFileIdentityKind = email ? 'email' : projectId ? 'projectId' : 'fileName';
-  const primary = email || projectId || base;
+  const accountName = readIdentityText(file.bedrockMantle?.accountName);
+  const kind: AuthFileIdentityKind = email
+    ? 'email'
+    : projectId
+      ? 'projectId'
+      : accountName
+        ? 'accountName'
+        : 'fileName';
+  const primary = email || projectId || accountName || base;
 
   const secondary =
     kind === 'fileName' || !base || base.toLowerCase() === primary.toLowerCase() ? null : base;
