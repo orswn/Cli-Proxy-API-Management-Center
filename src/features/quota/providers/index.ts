@@ -19,6 +19,8 @@ import { DEVIN_CONFIG } from './devin/data';
 import { DevinQuotaBody } from './devin/DevinQuotaBody';
 import { CODEX_CONFIG } from './codex/data';
 import { CodexQuotaBody } from './codex/CodexQuotaBody';
+import { META_CONFIG } from './meta/data';
+import { MetaQuotaBody } from './meta/MetaQuotaBody';
 import { KIMI_CONFIG } from './kimi/data';
 import { KimiQuotaBody } from './kimi/KimiQuotaBody';
 import { XAI_CONFIG } from './xai/data';
@@ -36,6 +38,7 @@ export interface QuotaAdapter {
   i18nPrefix: string;
   filterFn: (file: AuthFileItem) => boolean;
   fetchQuota: (file: AuthFileItem, t: TFunction) => Promise<unknown>;
+  enrichQuota?: (file: AuthFileItem, data: unknown, t: TFunction) => Promise<unknown>;
   resetQuota?: (file: AuthFileItem, t: TFunction) => Promise<unknown>;
   canResetQuota?: (quota: QuotaCardState) => boolean;
   storeSelector: (state: QuotaStore) => Record<string, QuotaCardState>;
@@ -55,6 +58,7 @@ export const QUOTA_ADAPTERS: Record<QuotaProviderType, QuotaAdapter> = {
   codex: { ...CODEX_CONFIG, Body: CodexQuotaBody } as unknown as QuotaAdapter,
   devin: { ...DEVIN_CONFIG, Body: DevinQuotaBody } as unknown as QuotaAdapter,
   kimi: { ...KIMI_CONFIG, Body: KimiQuotaBody } as unknown as QuotaAdapter,
+  meta: { ...META_CONFIG, Body: MetaQuotaBody } as unknown as QuotaAdapter,
   xai: { ...XAI_CONFIG, Body: XaiQuotaBody } as unknown as QuotaAdapter,
 };
 

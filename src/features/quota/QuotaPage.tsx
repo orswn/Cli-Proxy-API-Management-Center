@@ -13,6 +13,7 @@ import { useTranslation } from 'react-i18next';
 import { authFilesApi } from '@/services/api';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { IconSearch, IconX } from '@/components/ui/icons';
 import { Select } from '@/components/ui/Select';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { useHeaderRefresh } from '@/hooks/useHeaderRefresh';
@@ -38,6 +39,7 @@ import {
   canRefreshQuotaAfterList,
   classifyQuotaFiles,
   filterEntriesByTab,
+  filterEntriesBySearch,
   paginate,
   sortQuotaEntries,
   type QuotaFileEntry,
@@ -73,6 +75,8 @@ export function QuotaPage() {
     () => readQuotaUiState()?.sortMode ?? 'default'
   );
   const [page, setPage] = useState(1);
+  const [search, setSearch] = useState('');
+  const searchInputRef = useRef<HTMLInputElement>(null);
   // 页头 + tabs 的入场级联（标题 → meta → 动作 → tabs，级差 70ms）
   const revealRef = useRevealGroup<HTMLDivElement>();
 
@@ -127,6 +131,7 @@ export function QuotaPage() {
   const codexQuota = useQuotaStore((state) => state.codexQuota);
   const devinQuota = useQuotaStore((state) => state.devinQuota);
   const kimiQuota = useQuotaStore((state) => state.kimiQuota);
+  const metaQuota = useQuotaStore((state) => state.metaQuota);
   const xaiQuota = useQuotaStore((state) => state.xaiQuota);
 
   const quotaByType = useMemo<Record<QuotaProviderType, Record<string, QuotaCardState>>>(
@@ -137,9 +142,10 @@ export function QuotaPage() {
         codex: codexQuota,
         devin: devinQuota,
         kimi: kimiQuota,
+        meta: metaQuota,
         xai: xaiQuota,
       }) as unknown as Record<QuotaProviderType, Record<string, QuotaCardState>>,
-    [antigravityQuota, claudeQuota, codexQuota, devinQuota, kimiQuota, xaiQuota]
+    [antigravityQuota, claudeQuota, codexQuota, devinQuota, kimiQuota, metaQuota, xaiQuota]
   );
 
   const getQuota = useCallback(
@@ -157,7 +163,14 @@ export function QuotaPage() {
 
   const entries = useMemo(() => classifyQuotaFiles(files), [files]);
   const tabCounts = useMemo(() => buildTabCounts(entries), [entries]);
-  const filteredEntries = useMemo(() => filterEntriesByTab(entries, tab), [entries, tab]);
+  const filteredEntries = useMemo(
+    () => filterEntriesBySearch(filterEntriesByTab(entries, tab), search),
+    [entries, tab, search]
+  );
+  const handleSearchChange = useCallback((value: string) => {
+    setSearch(value);
+    setPage(1);
+  }, []);
 
   const resolveNextRecovery = useCallback(
     (entry: QuotaFileEntry) => nextRecoveryMs(entry.type, getQuota(entry), sortNow),
@@ -311,8 +324,7 @@ export function QuotaPage() {
       />
 
       <section className={styles.workbench}>
-        {/* tabs + 排序作为一个整体入场（useRevealGroup 会给每个 [data-reveal]
-            后代加一级级差，所以排序控件放在同一个节点里而不是做兄弟） */}
+        {/* 提供商导航与搜索工具栏分层，避免不同控件争夺视觉焦点。 */}
         <div className={styles.tabsRow} data-reveal>
           <ProviderTabs
             types={TAB_IDS}
@@ -321,6 +333,35 @@ export function QuotaPage() {
             resolvedTheme={resolvedTheme}
             onChange={handleTabChange}
           />
+        </div>
+
+        <div className={styles.toolbar}>
+          <div className={styles.search}>
+            <IconSearch size={16} className={styles.searchIcon} aria-hidden="true" />
+            <input
+              ref={searchInputRef}
+              className={styles.searchInput}
+              type="search"
+              value={search}
+              onChange={(event) => handleSearchChange(event.target.value)}
+              placeholder={t('quota_management.search_placeholder')}
+              aria-label={t('quota_management.search_label')}
+            />
+            {search && (
+              <button
+                type="button"
+                className={styles.clearSearch}
+                aria-label={t('quota_management.search_clear')}
+                title={t('quota_management.search_clear')}
+                onClick={() => {
+                  handleSearchChange('');
+                  searchInputRef.current?.focus();
+                }}
+              >
+                <IconX size={14} aria-hidden="true" />
+              </button>
+            )}
+          </div>
           <div className={styles.sort}>
             <Select
               value={sortMode}
@@ -347,17 +388,25 @@ export function QuotaPage() {
         ) : isEmpty ? (
           <EmptyState
             title={
-              tab === 'all'
-                ? t('quota_management.empty_title')
-                : t(`${QUOTA_ADAPTERS[tab].i18nPrefix}.empty_title`)
+              search.trim()
+                ? t('quota_management.search_empty_title')
+                : tab === 'all'
+                  ? t('quota_management.empty_title')
+                  : t(`${QUOTA_ADAPTERS[tab].i18nPrefix}.empty_title`)
             }
             description={
-              tab === 'all'
-                ? t('quota_management.empty_desc')
-                : t(`${QUOTA_ADAPTERS[tab].i18nPrefix}.empty_desc`)
+              search.trim()
+                ? t('quota_management.search_empty_desc')
+                : tab === 'all'
+                  ? t('quota_management.empty_desc')
+                  : t(`${QUOTA_ADAPTERS[tab].i18nPrefix}.empty_desc`)
             }
             action={
-              tab === 'all' ? undefined : (
+              search.trim() ? (
+                <Button variant="secondary" size="sm" onClick={() => handleSearchChange('')}>
+                  {t('quota_management.search_clear')}
+                </Button>
+              ) : tab === 'all' ? undefined : (
                 <Button variant="secondary" size="sm" onClick={() => handleTabChange('all')}>
                   {t('auth_files.filter_all')}
                 </Button>
