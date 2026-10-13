@@ -57,6 +57,9 @@ export interface AuthFileItem {
   bedrockMantle?: MantleCredential;
   size?: number;
   authIndex?: string | number | null;
+  /** Generic plugin quota capability advertised by CPA's auth-files API. */
+  supportsQuota?: boolean;
+  quotaProvider?: string;
   runtimeOnly?: boolean | string;
   disabled?: boolean;
   unavailable?: boolean;
