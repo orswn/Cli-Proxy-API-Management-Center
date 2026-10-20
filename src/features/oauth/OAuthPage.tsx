@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useRevealGroup } from '@/hooks/motion';
 import { useAuthStore, useThemeStore } from '@/stores';
 import iconVertex from '@/assets/icons/vertex.svg';
+import iconCodex from '@/assets/icons/codex.svg';
 import { MantleWizard } from '@/features/bedrockMantle/MantleWizard';
 import { KIMI_DISPLAY_NAME } from '@/features/providers/kimi';
 import { OAuthHeader } from './components/OAuthHeader';
@@ -11,6 +12,7 @@ import { ProviderTile } from './components/ProviderTile';
 import { SponsorCard, type SponsorCardSite } from './components/SponsorCard';
 import { OAuthFlowDialog, type DialogHeading } from './components/OAuthFlowDialog';
 import { VertexImportDialog } from './components/VertexImportDialog';
+import { SiwcBindDialog } from './components/SiwcBindDialog';
 import {
   useOAuthFlows,
   usePluginOAuthProviders,
@@ -56,6 +58,13 @@ export function OAuthPage() {
   const [dialog, setDialog] = useState<DialogTarget | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [mantleOpen, setMantleOpen] = useState(false);
+  const [siwcOpen, setSiwcOpen] = useState(false);
+  // 每次打开换新 key 重新挂载（全新选择与会话）；关闭后保持挂载，让退出动画走完
+  const [siwcKey, setSiwcKey] = useState(0);
+  const openSiwc = () => {
+    setSiwcKey((key) => key + 1);
+    setSiwcOpen(true);
+  };
 
   const flows = useOAuthFlows({
     providerCards,
@@ -207,10 +216,17 @@ export function OAuthPage() {
             onOpen={openVertex}
           />
           <ProviderTile
+            label={t('siwc.bind')}
+            caption={t('siwc.tile_caption')}
+            icon={iconCodex}
+            index={regularCards.length + tileIndexOffset + 1}
+            onOpen={openSiwc}
+          />
+          <ProviderTile
             label={t('mantle.title')}
             caption={t('mantle.add')}
             icon=""
-            index={regularCards.length + tileIndexOffset + 1}
+            index={regularCards.length + tileIndexOffset + 2}
             onOpen={() => setMantleOpen(true)}
           />
         </div>
@@ -249,6 +265,16 @@ export function OAuthPage() {
         onViewAuthFiles={viewAuthFiles}
         onClose={closeDialog}
       />
+
+      {siwcKey > 0 && (
+        <SiwcBindDialog
+          key={siwcKey}
+          open={siwcOpen}
+          onClose={() => setSiwcOpen(false)}
+          onViewAuthFiles={viewAuthFiles}
+        />
+      )}
+
       {mantleOpen && <MantleWizard onClose={() => setMantleOpen(false)} />}
     </div>
   );
