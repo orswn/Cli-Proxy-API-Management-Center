@@ -139,10 +139,11 @@ describe('OAuth provider gallery', () => {
         expect(markup).toContain(label);
       }
       expect(markup).toContain('Vertex AI');
+      expect(markup).toContain(i18n.t('siwc.bind'));
       expect(markup).toContain('Bedrock Mantle');
-      expect(markup).not.toMatch(/auth_login\.|vertex_import\.|mantle\./);
-      // 每个磁贴都是打开对话框的按钮
-      expect(markup.match(/aria-haspopup="dialog"/g)?.length).toBe(OAUTH_PROVIDERS.length + 2);
+      expect(markup).not.toMatch(/auth_login\.|vertex_import\.|siwc\.|mantle\./);
+      // 每个磁贴都是打开对话框的按钮（提供商 + Vertex + SIWC 绑定 + Bedrock Mantle）
+      expect(markup.match(/aria-haspopup="dialog"/g)?.length).toBe(OAUTH_PROVIDERS.length + 3);
     });
   }
 
