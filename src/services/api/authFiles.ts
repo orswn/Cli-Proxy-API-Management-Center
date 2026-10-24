@@ -47,6 +47,7 @@ export type AuthFileFieldsPatch = {
   'disable-cooling'?: boolean;
   websockets?: boolean;
   using_api?: boolean;
+  use_siwc?: boolean;
   note?: string;
   excluded_models?: string[];
   'excluded-models'?: string[];
